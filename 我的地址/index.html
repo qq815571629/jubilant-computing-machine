@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程安排查询系统</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+    
+    <!-- 主要CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- 本地样式表 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- 登录界面 -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h2>课程安排查询系统</h2>
+            <p>安阳市龙安高级中学</p>
+            <input type="password" class="login-input" id="loginPassword" placeholder="请输入访问密码">
+            <button class="login-btn" onclick="checkPassword()">登录系统</button>
+            <div class="admin-link" onclick="showAdminLogin()">管理员登录</div>
+        </div>
+    </div>
+    
+    <!-- 管理员登录界面 -->
+    <div class="login-container" id="adminLoginContainer" style="display: none;">
+        <div class="login-box">
+            <h2>管理员登录</h2>
+            <input type="password" class="login-input" id="adminPassword" placeholder="请输入管理员密码">
+            <button class="login-btn" onclick="checkAdminPassword()">登录管理界面</button>
+            <div class="admin-link" onclick="showUserLogin()">返回用户登录</div>
+        </div>
+    </div>
+    
+    <!-- 管理员界面 -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-box">
+            <button class="close-admin" onclick="closeAdminPanel()">&times;</button>
+            <h2>系统管理</h2>
+            <div class="admin-actions">
+                <button class="admin-btn primary" onclick="changeUserPassword()">
+                    <i class="fas fa-key"></i> 修改用户密码
+                </button>
+                <button class="admin-btn primary" onclick="changeAdminPassword()">
+                    <i class="fas fa-user-shield"></i> 修改管理员密码
+                </button>
+                <button class="admin-btn success" onclick="exportData()">
+                    <i class="fas fa-download"></i> 导出数据
+                </button>
+                
+                <!-- 文件管理部分 -->
+                <div class="file-management">
+                    <h3>文件管理</h3>
+                    <div class="file-list" id="fileList">
+                        <!-- 文件列表将在这里动态生成 -->
+                    </div>
+                    <div class="file-controls">
+                        <button class="file-control-btn load-all" onclick="loadAllFiles()">
+                            <i class="fas fa-folder-open"></i> 加载所有文件
+                        </button>
+                        <button class="file-control-btn clear-all" onclick="clearAllFiles()">
+                            <i class="fas fa-trash"></i> 清除所有文件
+                        </button>
+                    </div>
+                </div>
+                
+                <button class="admin-btn danger" onclick="clearAllData()">
+                    <i class="fas fa-trash"></i> 清除所有数据
+                </button>
+                <button class="admin-btn" onclick="viewCode()" style="background: #9b59b6; color: white;">
+                    <i class="fas fa-code"></i> 查看源代码 (需密码)
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主系统界面 -->
+    <div class="main-system" id="mainSystem">
+        <div class="container">
+            <header>
+                <h1>课程安排查询系统</h1>
+                <p class="subtitle">安阳市龙安高级中学</p>
+                <div class="admin-access">
+                    <button class="admin-toggle" onclick="showAdminLogin()">管理员入口</button>
+                </div>
+            </header>
+            
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="class">班级课表查询</button>
+                <button class="mode-btn" data-mode="teacher">教师任课查询</button>
+            </div>
+            
+            <div class="upload-section">
+                <h3>上传课程安排表格</h3>
+                <div class="file-input-wrapper">
+                    <button class="file-input-btn">
+                        <i class="fas fa-upload"></i> 选择Excel文件
+                    </button>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls">
+                </div>
+                <p id="fileName">未选择文件</p>
+                <div class="data-status" id="dataStatus">暂无数据，请上传课程安排表格</div>
+            </div>
+            
+            <!-- 班级课表查询部分 -->
+            <div class="mode-section active" id="classSection">
+                <div class="search-box">
+                    <select id="className">
+                        <option value="">请选择班级</option>
+                    </select>
+                    <div class="button-group">
+                        <button class="search-btn" onclick="searchSchedule()">
+                            <i class="fas fa-search"></i> 查询课表
+                        </button>
+                        <button class="clear-btn" onclick="clearSearch()">
+                            <i class="fas fa-eraser"></i> 清除搜索
+                        </button>
+                        <button class="print-btn" id="printBtn" onclick="printSchedule()" disabled>
+                            <i class="fas fa-print"></i> 打印课表
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="result"></div>
+            </div>
+            
+            <!-- 教师任课查询部分 -->
+            <div class="mode-section" id="teacherSection">
+                <div class="search-box">
+                    <input type="text" id="teacherName" placeholder="请输入教师姓名">
+                    <div class="button-group">
+                        <button class="search-btn" onclick="searchTeacherSchedule()">
+                            <i class="fas fa-search"></i> 查询任课
+                        </button>
+                        <button class="clear-btn" onclick="clearTeacherSearch()">
+                            <i class="fas fa-eraser"></i> 清除搜索
+                        </button>
+                        <button class="print-btn" id="printTeacherBtn" onclick="printTeacherSchedule()" disabled>
+                            <i class="fas fa-print"></i> 打印课表
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="teacherResult"></div>
+            </div>
+            
+            <div class="footer">
+                <p>©课程安排查询系统 | 技术支持: 安阳市龙安高级中学 教务处</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本地JavaScript文件 -->
+    <script src="js/script.js"></script>
+</body>
+</html>
